@@ -3,7 +3,7 @@ from traffic_sender import send_traffic
 from real_traffic import imitate_real_traffic
 
 def main():
-    api_key = "AIzaSyDjNZ55qUgCsP4sqcM2NqKd4IP_aePcBaw"
+    api_key = input("Enter your Access Key: ").strip()
     genai.configure(api_key=api_key)
 
     available_models = [
