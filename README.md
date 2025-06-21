@@ -9,21 +9,12 @@
 - **File Analysis:** Examine files for suspicious content or characteristics.
 - **Virus Scanning:** Scan files or directories for potential malware or viruses.
 - **SQL Vulnerability Testing:** Test websites for SQL injection vulnerabilities.
-- **Traffic Sending:** Interact with network modules to send traffic or perform network-related actions.
+- **Website Vulnerability Scanning:** Scan websites for XSS, sensitive files, and interesting paths.
+- **Traffic Sending:** Interact with network modules to send different types of traffic or perform network-related actions.
+- **Phone Number Lookup:** Lookup details about phone numbers.
+- **Email Lookup & Tracking:** Lookup information about email addresses and track their usage across platforms.
 - **Command Fulfillment:** Understand and execute a wide range of user commands related to cybersecurity.
-- **Modular Expansion:** Easily integrate additional hacking and security features, such as:# Project Sentient
-
-**Project Sentient** is an AI-powered command-line assistant designed for cybersecurity and automation tasks. It acts as a helpful hacking AI, capable of understanding user commands and providing intelligent, conversational responses. Sentient is modular, allowing for easy integration of new hacking and security features.
-
----
-
-## Features
-
-- **File Analysis:** Examine files for suspicious content or characteristics.
-- **Virus Scanning:** Scan files or directories for potential malware or viruses.
-- **SQL Vulnerability Testing:** Test websites for SQL injection vulnerabilities.
-- **Traffic Sending:** Interact with network modules to send traffic or perform network-related actions.
-- **Command Fulfillment:** Understand and execute a wide range of user commands related to cybersecurity.
+- **Web Search Integration:** Search the internet for information and summarize results using online search APIs.
 - **Modular Expansion:** Easily integrate additional hacking and security features, such as:
   - Port scanning
   - Network mapping
@@ -38,7 +29,7 @@
   - Vulnerability scanning
   - SSL/TLS security checks
   - Automated report generation
-  - Log file analysis
+  -
 
 ---
 
