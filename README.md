@@ -123,6 +123,9 @@ For more details, see [CC BY-NC-ND 4.0 License](https://creativecommons.org/lice
 
 Interact with Sentient through the command line. Type your cybersecurity or automation queries and receive intelligent responses. Type `exit` or `quit` to end the session.
 
+Access Key= Google Api Token
+For full experience Email muhammadhuzaifakhalidaziz@gmail.com for a Premium Access Token.
+
 ---
 
 ## License
