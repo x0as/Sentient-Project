@@ -45,20 +45,23 @@
    ```sh
    pip install -r requirements.txt
    ```
-
-3. **Configure your API key:**
-   - Open `Sentient.py` and add your API key where indicated.
-
-4. **Run the assistant:**
+   
+3. **Run the assistant:**
    ```sh
    python Sentient.py
    ```
+
+4. **Configure your API key:**
+   - Open `Sentient.py` and add your API key when indicated
 
 ---
 
 ## Usage
 
 Interact with Sentient through the command line. Type your cybersecurity or automation queries and receive intelligent responses. Type `exit` or `quit` to end the session.
+
+Access Key =  Google Api Token.
+For full experience Email muhammadhuzaifakhalidaziz@gmail.com for a Premium Access Token.
 
 ---
 
@@ -109,19 +112,22 @@ For more details, see [CC BY-NC-ND 4.0 License](https://creativecommons.org/lice
    pip install -r requirements.txt
    ```
 
-3. **Configure your API key:**
-   - Open `Sentient.py` and add your API key where indicated.
-
 4. **Run the assistant:**
    ```sh
    python Sentient.py
    ```
+
+4. **Configure your API key:**
+   - Open `Sentient.py` and add your API key when indicated.
 
 ---
 
 ## Usage
 
 Interact with Sentient through the command line. Type your cybersecurity or automation queries and receive intelligent responses. Type `exit` or `quit` to end the session.
+
+Access Key =  Google Api Token.
+For full experience Email muhammadhuzaifakhalidaziz@gmail.com for a Premium Access Token.
 
 ---
 
