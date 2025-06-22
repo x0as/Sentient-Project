@@ -1,0 +1,7 @@
+google-generativeai
+pymongo
+fuzzywuzzy
+requests
+google-search-results
+fastapi
+uvicorn
