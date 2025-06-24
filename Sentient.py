@@ -48,7 +48,6 @@ def print_banner_rainbow_until_enter():
     RESET_COLOR = "\033[0m"
 
     art = [
-        "                                                                                      ",
         "      #######                                                                         ",
         "    /       ###                                   #                                   ",
         "   /         ##                           #      ###                            #     ",
@@ -63,8 +62,7 @@ def print_banner_rainbow_until_enter():
         "  /##        /   ####    / ##    ##      ##       ##   ####    / ##    ##      ##    ",
         " /  ########/     ######/  ###   ###     ##       ### / ######/  ###   ###     ##    ",
         "/     #####        #####    ###   ###     ##       ##/   #####    ###   ###     ##   ",
-        "|                                                                                     ",
-        " \\)                                                                                   ",
+        "                                                                                      ",
         "                                                                                      ",
     ]
     prompt = "Press Enter to start"
@@ -211,8 +209,10 @@ def main():
         "analyze log files (analyze log <filepath>), "
         "export scan and analysis reports to files, "
         "auto-update itself from the official repository, "
-        "and answer follow-up questions about previous scans or file analyses. "
-        "You also display a glowing animated ASCII art banner on startup. "
+        "answer follow-up questions about previous scans or file analyses, "
+        "display a glowing animated ASCII art banner on startup, "
+        "use fuzzy matching to understand natural language commands, "
+        "and support broad, flexible command recognition (e.g., you understand requests like 'find vulnerabilities in example.com for me'). "
         "Do not say unnecessary things. Respond concisely and directly. "
         "Only ask questions if more information is required to execute a command. "
         "Be slightly talkative, but not too much and not too little. "
@@ -263,7 +263,6 @@ def main():
             print(f"\n{INFO_COLOR}Security Notice:{RESET_COLOR} Use Sentient responsibly and only on systems you own or have permission to test. Unauthorized use may be illegal and unethical.")
             continue
 
-        # Use improved extract_command for broad matching
         matched_command, argument = extract_command(user_input)
 
         # Export last scan results
@@ -590,7 +589,7 @@ def main():
             response = model.generate_content(prompt)
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} {response.text.strip()}")
         except Exception as e:
-            print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} {e}")
+            print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} AI response failed: {e}")
 
 if __name__ == "__main__":
     main()
