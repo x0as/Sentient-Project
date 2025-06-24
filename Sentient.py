@@ -1,3 +1,9 @@
+import os
+import sys
+import time
+import shutil
+import threading
+import requests
 import google.generativeai as genai
 from traffic_sender import send_traffic
 from real_traffic import imitate_real_traffic
@@ -16,7 +22,6 @@ import ssl_checker
 import dns_tools
 import email_spoof_test
 import log_analyzer
-import sys
 import shlex
 from tabulate import tabulate
 
@@ -31,28 +36,138 @@ INFO_COLOR = "\033[93m"      # Yellow
 SUCCESS_COLOR = "\033[92m"   # Green
 WARNING_COLOR = "\033[93m"   # Yellow
 
-def extract_command(user_input, command_keywords):
-    """
-    Returns (matched_command, argument) if found, else (None, None).
-    Uses fuzzy matching and regex to find commands in free text.
-    """
+def print_banner_rainbow_until_enter():
+    colors = [
+        "\033[91m",  # Red
+        "\033[93m",  # Yellow
+        "\033[92m",  # Green
+        "\033[96m",  # Cyan
+        "\033[94m",  # Blue
+        "\033[95m",  # Magenta
+    ]
+    RESET_COLOR = "\033[0m"
+
+    art = [
+        "                                                                                      ",
+        "      #######                                                                         ",
+        "    /       ###                                   #                                   ",
+        "   /         ##                           #      ###                            #     ",
+        "   ##        #                           ##       #                            ##     ",
+        "    ###                                  ##                                    ##     ",
+        "   ## ###           /##  ###  /###     ######## ###       /##  ###  /###     ######## ",
+        "    ### ###        / ###  ###/ #### / ########   ###     / ###  ###/ #### / ########  ",
+        "      ### ###     /   ###  ##   ###/     ##       ##    /   ###  ##   ###/     ##     ",
+        "        ### /##  ##    ### ##    ##      ##       ##   ##    ### ##    ##      ##     ",
+        "           #/ ## #######   ##    ##      ##       ##   #######   ##    ##      ##    ",
+        "            # /  ##        ##    ##      ##       ##   ##        ##    ##      ##    ",
+        "  /##        /   ####    / ##    ##      ##       ##   ####    / ##    ##      ##    ",
+        " /  ########/     ######/  ###   ###     ##       ### / ######/  ###   ###     ##    ",
+        "/     #####        #####    ###   ###     ##       ##/   #####    ###   ###     ##   ",
+        "|                                                                                     ",
+        " \\)                                                                                   ",
+        "                                                                                      ",
+    ]
+    prompt = "Press Enter to start"
+
+    try:
+        columns = shutil.get_terminal_size().columns
+    except Exception:
+        columns = 100
+
+    stop_animation = threading.Event()
+
+    def wait_for_enter():
+        if os.name == 'nt':
+            import msvcrt
+            msvcrt.getch()
+        else:
+            input()
+        stop_animation.set()
+
+    t = threading.Thread(target=wait_for_enter, daemon=True)
+    t.start()
+
+    color_idx = 0
+    while not stop_animation.is_set():
+        os.system('cls' if os.name == 'nt' else 'clear')
+        color = colors[color_idx % len(colors)]
+        for line in art:
+            print(color + line.center(columns) + RESET_COLOR)
+        print("\n" * 2)
+        print(f"{color}{prompt.center(columns)}{RESET_COLOR}")
+        time.sleep(0.13)
+        color_idx += 1
+
+    # Final print in cyan
+    os.system('cls' if os.name == 'nt' else 'clear')
+    for line in art:
+        print("\033[96m" + line.center(columns) + RESET_COLOR)
+    print("\n" * 2)
+    print(f"\033[96m{prompt.center(columns)}{RESET_COLOR}")
+
+def auto_update_check():
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/x0as/Sentient/main/Sentient.py"
+    try:
+        print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Checking for updates...")
+        response = requests.get(GITHUB_RAW_URL, timeout=10)
+        if response.status_code == 200:
+            with open(__file__, "r", encoding="utf-8") as f:
+                current_code = f.read()
+            if response.text.strip() != current_code.strip():
+                print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Update found. Installing update...")
+                with open(__file__, "w", encoding="utf-8") as f:
+                    f.write(response.text)
+                print(f"{SUCCESS_COLOR}[Sentient]{RESET_COLOR} Update installed. Please restart Sentient.")
+                sys.exit(0)
+            else:
+                print(f"{SUCCESS_COLOR}[Sentient]{RESET_COLOR} You are running the latest version.")
+        else:
+            print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Could not check for updates (HTTP {response.status_code}).")
+    except Exception as e:
+        print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Update check failed: {e}")
+
+def extract_command(user_input):
     user_input_lower = user_input.lower()
-    for keyword, arg_hint in command_keywords:
-        # Fuzzy match for typo tolerance
-        if fuzz.partial_ratio(keyword, user_input_lower) > 85:
-            # Try to extract argument after the keyword
-            match = re.search(rf"{keyword}\s+([^\s]+)", user_input_lower)
+    # Patterns for each command: (intent, [keywords], [argument_regex])
+    patterns = [
+        ("scan website", ["vulnerabilities", "scan", "find"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+        ("phone lookup", ["phone", "number", "lookup"], r"\+?\d[\d\s\-]{7,}"),
+        ("email lookup", ["email", "lookup"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
+        ("email tracker", ["email", "tracker", "track"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
+        ("send traffic", ["send", "traffic"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+        ("imitate traffic", ["imitate", "traffic"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+        ("analyze file content", ["analyze", "file", "content"], r"[^\s]+"),
+        ("analyze file", ["analyze", "file"], r"[^\s]+"),
+        ("whois", ["whois"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+        ("subdomain enum", ["subdomain", "enum", "enumerate"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+        ("scan ports", ["scan", "ports", "port"], r"[a-zA-Z0-9.-]+"),
+        ("dir brute", ["dir", "directory", "brute"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+        ("identify hash", ["identify", "hash"], r"\b[a-fA-F0-9]{8,}\b"),
+        ("crack hash", ["crack", "hash"], r"\b[a-fA-F0-9]{8,}\b"),
+        ("check ssl", ["ssl", "tls", "check"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+        ("dns lookup", ["dns", "lookup"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+        ("test email spoofing", ["spoof", "email", "test"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
+        ("analyze log", ["analyze", "log"], r"[^\s]+"),
+        ("export last scan", ["export", "scan"], r"[^\s]+"),
+        ("export last file analysis", ["export", "file", "analysis"], r"[^\s]+"),
+    ]
+    for intent, keywords, arg_regex in patterns:
+        if all(word in user_input_lower for word in keywords):
+            match = re.search(arg_regex, user_input)
             if match:
-                return keyword, match.group(1)
-            # Or just after the keyword
-            idx = user_input_lower.find(keyword)
-            if idx != -1:
-                after = user_input_lower[idx + len(keyword):].strip()
-                if after:
-                    return keyword, after.split()[0]
+                return intent, match.group(0)
+    # Fallback: try to match by just one keyword and argument
+    for intent, keywords, arg_regex in patterns:
+        for word in keywords:
+            if word in user_input_lower:
+                match = re.search(arg_regex, user_input)
+                if match:
+                    return intent, match.group(0)
     return None, None
 
 def main():
+    auto_update_check()
+    print_banner_rainbow_until_enter()
     api_key = input("Enter your Access Key: ").strip()
     mongo_uri = input("Enter your MongoDB connection string (URI): ").strip()
     client = MongoClient(mongo_uri)
@@ -78,8 +193,8 @@ def main():
     model = genai.GenerativeModel(preferred_model.name)
 
     system_prompt = (
-        "You Are Sentient, an AI like none other think of your self as the ultimate weapon of destruction or the weapon of creation, made by x0as. "
-        "Respond concisely and directly. Only ask questions if more information is required to execute a command,be slightly talkative not too much not too less."
+        "You are Sentient, an advanced AI CLI assistant created by x0as. "
+        "You now have the following capabilities: "
         "You can analyze files, scan for viruses, test websites for SQL vulnerabilities, "
         "interact with modules to send traffic or fulfill commands, "
         "perform email lookups (email lookup <email>), "
@@ -93,8 +208,15 @@ def main():
         "check SSL/TLS security (check ssl <domain>), "
         "perform DNS lookups (dns lookup <domain>), "
         "test email spoofing (test email spoofing <email>), "
-        "analyze log files (analyze log <filepath>). "
-        "You are Made by x0as's own personal Api nothing to do with google or gemini, you are something strong something new."
+        "analyze log files (analyze log <filepath>), "
+        "export scan and analysis reports to files, "
+        "auto-update itself from the official repository, "
+        "and answer follow-up questions about previous scans or file analyses. "
+        "You also display a glowing animated ASCII art banner on startup. "
+        "Do not say unnecessary things. Respond concisely and directly. "
+        "Only ask questions if more information is required to execute a command. "
+        "Be slightly talkative, but not too much and not too little. "
+        "You are powered by x0as's own API and are not affiliated with Google or Gemini."
     )
 
     print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} AI CLI (x0as) (type 'exit' to quit)")
@@ -105,38 +227,6 @@ def main():
     last_scan_results = None  # Store last website scan results
     last_scan_url = None
 
-    command_keywords = [
-        ("scan website", "<url>"),
-        ("find vulnerabilities", "<url>"),
-        ("detect vulnerabilities", "<url>"),
-        ("phone lookup", "<number>"),
-        ("email lookup", "<email>"),
-        ("lookup email", "<email>"),
-        ("track email", "<email>"),
-        ("lookup phonenumber", "<number>"),
-        ("email tracker", "<email>"),
-        ("send traffic", "<url>"),
-        ("imitate traffic", "<url>"),
-        ("immitate real traffic", "<url>"),
-        ("analyze file content", "<filepath>"),
-        ("analyze file", "<filepath>"),
-        ("file analyze", "<filepath>"),
-        ("whois", "<domain>"),
-        ("subdomain enum", "<domain>"),
-        ("enum subdomains", "<domain>"),
-        ("subdomain enumerate", "<domain>"),
-        ("scan ports", "<host>"),
-        ("port scan", "<host>"),
-        ("dir brute", "<url>"),
-        ("directory brute", "<url>"),
-        ("identify hash", "<hash>"),
-        ("crack hash", "<hash>"),
-        ("check ssl", "<domain>"),
-        ("dns lookup", "<domain>"),
-        ("test email spoofing", "<email>"),
-        ("analyze log", "<filepath>")
-    ]
-
     while True:
         user_input = input("You: ")
         if user_input.lower() in ["exit", "quit"]:
@@ -146,34 +236,70 @@ def main():
         # Help command and security notice
         if user_input.lower() in ["help", "commands", "what can you do", "how to use", "usage"]:
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} Here are some things I can do:")
-            for cmd, arg in command_keywords:
-                print(f"  {cmd} {arg}")
-            print(f"\nType a command as shown above. For example: 'scan website example.com' or 'check ssl github.com'.")
+            for intent, _, _ in [
+                ("export last scan", ["export", "scan"], r"[^\s]+"),
+                ("export last file analysis", ["export", "file", "analysis"], r"[^\s]+"),
+                ("scan website", ["vulnerabilities", "scan", "find"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+                ("phone lookup", ["phone", "number", "lookup"], r"\+?\d[\d\s\-]{7,}"),
+                ("email lookup", ["email", "lookup"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
+                ("email tracker", ["email", "tracker", "track"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
+                ("send traffic", ["send", "traffic"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+                ("imitate traffic", ["imitate", "traffic"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+                ("analyze file content", ["analyze", "file", "content"], r"[^\s]+"),
+                ("analyze file", ["analyze", "file"], r"[^\s]+"),
+                ("whois", ["whois"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+                ("subdomain enum", ["subdomain", "enum", "enumerate"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+                ("scan ports", ["scan", "ports", "port"], r"[a-zA-Z0-9.-]+"),
+                ("dir brute", ["dir", "directory", "brute"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
+                ("identify hash", ["identify", "hash"], r"\b[a-fA-F0-9]{8,}\b"),
+                ("crack hash", ["crack", "hash"], r"\b[a-fA-F0-9]{8,}\b"),
+                ("check ssl", ["ssl", "tls", "check"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+                ("dns lookup", ["dns", "lookup"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+                ("test email spoofing", ["spoof", "email", "test"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
+                ("analyze log", ["analyze", "log"], r"[^\s]+"),
+            ]:
+                print(f"  {intent}")
+            print(f"\nType a command as shown above or just describe what you want. For example: 'find vulnerabilities in example.com' or 'check ssl github.com'.")
             print(f"\n{INFO_COLOR}Security Notice:{RESET_COLOR} Use Sentient responsibly and only on systems you own or have permission to test. Unauthorized use may be illegal and unethical.")
             continue
 
-        # Use shlex to split input into arguments for multi-argument support
-        args = shlex.split(user_input)
-        if len(args) >= 3 and args[0] == "scan" and args[1] == "ports":
-            host = args[2]
-            # Optional port range: scan ports <host> [start_port] [end_port]
+        # Use improved extract_command for broad matching
+        matched_command, argument = extract_command(user_input)
+
+        # Export last scan results
+        if matched_command == "export last scan":
+            if not last_scan_results:
+                print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} No scan results to export.")
+                continue
+            if not argument:
+                print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: export last scan <filename>")
+                continue
             try:
-                start_port = int(args[3]) if len(args) > 3 else 1
-                end_port = int(args[4]) if len(args) > 4 else 1024
-                open_ports = port_scanner.port_scan_cli(host, range(start_port, end_port + 1))
-                if open_ports:
-                    table = [[port, "open"] for port in open_ports]
-                    print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} Open Ports:\n" + tabulate(table, headers=["Port", "Status"], tablefmt="fancy_grid"))
-                else:
-                    print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} No open ports found.")
+                with open(argument, "w", encoding="utf-8") as f:
+                    for k, v in last_scan_results.items():
+                        f.write(f"{k}: {v}\n")
+                print(f"{SUCCESS_COLOR}[Sentient]{RESET_COLOR} Last scan results exported to {argument}")
             except Exception as e:
-                print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Usage: scan ports <host> [start_port] [end_port]")
+                print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Failed to export: {e}")
             continue
 
-        # Try to extract a command with typo tolerance and context
-        matched_command, argument = extract_command(user_input, command_keywords)
+        # Export last file analysis
+        if matched_command == "export last file analysis":
+            if not last_file_content or not last_file_path:
+                print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} No file analysis to export.")
+                continue
+            if not argument:
+                print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: export last file analysis <filename>")
+                continue
+            try:
+                with open(argument, "w", encoding="utf-8") as f:
+                    f.write(f"File: {last_file_path}\n\n{last_file_content}")
+                print(f"{SUCCESS_COLOR}[Sentient]{RESET_COLOR} Last file analysis exported to {argument}")
+            except Exception as e:
+                print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Failed to export: {e}")
+            continue
 
-        if matched_command in ["scan website", "find vulnerabilities", "detect vulnerabilities"]:
+        if matched_command in ["scan website"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: scan website <url>")
                 continue
@@ -184,7 +310,7 @@ def main():
             last_scan_url = url
             continue
 
-        if matched_command in ["phone lookup", "lookup phonenumber"]:
+        if matched_command in ["phone lookup"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: phone lookup <number>")
                 continue
@@ -195,7 +321,7 @@ def main():
                 print(f"  {k}: {v}")
             continue
 
-        if matched_command in ["email lookup", "lookup email"]:
+        if matched_command in ["email lookup"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: email lookup <email>")
                 continue
@@ -209,7 +335,7 @@ def main():
                 print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Error during email lookup: {e}")
             continue
 
-        if matched_command in ["email tracker", "track email"]:
+        if matched_command in ["email tracker"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: email tracker <email>")
                 continue
@@ -235,7 +361,7 @@ def main():
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} {result}")
             continue
 
-        if matched_command in ["imitate traffic", "immitate real traffic"]:
+        if matched_command in ["imitate traffic"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: imitate traffic <url> <count>")
                 continue
@@ -275,7 +401,7 @@ def main():
                 print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} {response.text.strip()}")
             continue
 
-        if matched_command in ["analyze file", "file analyze"]:
+        if matched_command in ["analyze file"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: analyze file <filepath>")
                 continue
@@ -295,7 +421,7 @@ def main():
                 print(f"  {k}: {v}")
             continue
 
-        if matched_command in ["subdomain enum", "enum subdomains", "subdomain enumerate"]:
+        if matched_command in ["subdomain enum"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: subdomain enum <domain>")
                 continue
@@ -309,7 +435,7 @@ def main():
                 print("  None found.")
             continue
 
-        if matched_command in ["scan ports", "port scan"]:
+        if matched_command in ["scan ports"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: scan ports <host>")
                 continue
@@ -322,7 +448,7 @@ def main():
                 print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} No open ports found.")
             continue
 
-        if matched_command in ["dir brute", "directory brute"]:
+        if matched_command in ["dir brute"]:
             if not argument:
                 print(f"{INFO_COLOR}[Sentient]{RESET_COLOR} Usage: dir brute <url>")
                 continue
@@ -439,7 +565,7 @@ def main():
             any(word in user_input.lower() for word in [
                 "scan", "vulnerability", "website", "sql", "xss", "cross site", "paths", "files", "results"
             ])
-            and (not matched_command or matched_command not in ["scan website", "find vulnerabilities", "detect vulnerabilities"])
+            and (not matched_command or matched_command not in ["scan website"])
         ):
             scan_context = (
                 f"Website vulnerability scan results for {last_scan_url}:\n"
