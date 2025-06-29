@@ -12,6 +12,7 @@ def check_ssl(domain):
                 "subject": dict(x[0] for x in cert['subject']),
                 "issuer": dict(x[0] for x in cert['issuer']),
                 "valid_from": cert['notBefore'],
+                "valid_to": cert['notAfter'],
                 "serial_number": cert['serialNumber'],
             }
     except Exception as e:

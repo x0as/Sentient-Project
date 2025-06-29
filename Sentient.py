@@ -24,29 +24,21 @@ import email_spoof_test
 import log_analyzer
 import shlex
 from tabulate import tabulate
-
 from fuzzywuzzy import fuzz
 import re
 
-# Color codes for output
-SENTIENT_COLOR = "\033[96m"  # Cyan
+SENTIENT_COLOR = "\033[96m"
 RESET_COLOR = "\033[0m"
-ERROR_COLOR = "\033[91m"     # Red
-INFO_COLOR = "\033[93m"      # Yellow
-SUCCESS_COLOR = "\033[92m"   # Green
-WARNING_COLOR = "\033[93m"   # Yellow
+ERROR_COLOR = "\033[91m"
+INFO_COLOR = "\033[93m"
+SUCCESS_COLOR = "\033[92m"
+WARNING_COLOR = "\033[93m"
 
 def print_banner_rainbow_until_enter():
     colors = [
-        "\033[91m",  # Red
-        "\033[93m",  # Yellow
-        "\033[92m",  # Green
-        "\033[96m",  # Cyan
-        "\033[94m",  # Blue
-        "\033[95m",  # Magenta
+        "\033[91m", "\033[93m", "\033[92m", "\033[96m", "\033[94m", "\033[95m"
     ]
     RESET_COLOR = "\033[0m"
-
     art = [
         "      #######                                                                         ",
         "    /       ###                                   #                                   ",
@@ -66,14 +58,11 @@ def print_banner_rainbow_until_enter():
         "                                                                                      ",
     ]
     prompt = "Press Enter to start"
-
     try:
         columns = shutil.get_terminal_size().columns
     except Exception:
         columns = 100
-
     stop_animation = threading.Event()
-
     def wait_for_enter():
         if os.name == 'nt':
             import msvcrt
@@ -81,10 +70,8 @@ def print_banner_rainbow_until_enter():
         else:
             input()
         stop_animation.set()
-
     t = threading.Thread(target=wait_for_enter, daemon=True)
     t.start()
-
     color_idx = 0
     while not stop_animation.is_set():
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -95,8 +82,6 @@ def print_banner_rainbow_until_enter():
         print(f"{color}{prompt.center(columns)}{RESET_COLOR}")
         time.sleep(0.13)
         color_idx += 1
-
-    # Final print in cyan
     os.system('cls' if os.name == 'nt' else 'clear')
     for line in art:
         print("\033[96m" + line.center(columns) + RESET_COLOR)
@@ -126,7 +111,6 @@ def auto_update_check():
 
 def extract_command(user_input):
     user_input_lower = user_input.lower()
-    # Patterns for each command: (intent, [keywords], [argument_regex])
     patterns = [
         ("scan website", ["vulnerabilities", "scan", "find"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
         ("phone lookup", ["phone", "number", "lookup"], r"\+?\d[\d\s\-]{7,}"),
@@ -154,7 +138,6 @@ def extract_command(user_input):
             match = re.search(arg_regex, user_input)
             if match:
                 return intent, match.group(0)
-    # Fallback: try to match by just one keyword and argument
     for intent, keywords, arg_regex in patterns:
         for word in keywords:
             if word in user_input_lower:
@@ -192,11 +175,10 @@ def main():
 
     system_prompt = (
         "You are Sentient, an advanced AI CLI assistant created by x0as. "
-        "You now have the following capabilities: "
-        "You can analyze files, scan for viruses, test websites for SQL vulnerabilities, "
-        "interact with modules to send traffic or fulfill commands, "
-        "perform email lookups (email lookup <email>), "
-        "track email usage across many online platforms (email tracker <email>), "
+        "You can now do the following: "
+        "Analyze files, scan for viruses, test websites for SQL vulnerabilities, "
+        "send or imitate traffic, perform email lookups (email lookup <email>), "
+        "track email usage across platforms (email tracker <email>), "
         "perform phone number lookups (phone lookup <number>), "
         "perform WHOIS lookups (whois <domain>), "
         "enumerate subdomains (subdomain enum <domain>), "
@@ -213,8 +195,7 @@ def main():
         "display a glowing animated ASCII art banner on startup, "
         "use fuzzy matching to understand natural language commands, "
         "and support broad, flexible command recognition (e.g., you understand requests like 'find vulnerabilities in example.com for me'). "
-        "Do not say unnecessary things. Respond concisely and directly. "
-        "Only ask questions if more information is required to execute a command. "
+        "Respond concisely and directly. Only ask questions if more information is required to execute a command. "
         "Be slightly talkative, but not too much and not too little. "
         "You are powered by x0as's own API and are not affiliated with Google or Gemini."
     )
@@ -224,7 +205,7 @@ def main():
     pending_confirmation = None
     last_file_content = None
     last_file_path = None
-    last_scan_results = None  # Store last website scan results
+    last_scan_results = None
     last_scan_url = None
 
     while True:
@@ -265,7 +246,8 @@ def main():
 
         matched_command, argument = extract_command(user_input)
 
-        # Export last scan results
+        # Existing core commands below...
+
         if matched_command == "export last scan":
             if not last_scan_results:
                 print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} No scan results to export.")
@@ -282,7 +264,6 @@ def main():
                 print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} Failed to export: {e}")
             continue
 
-        # Export last file analysis
         if matched_command == "export last file analysis":
             if not last_file_content or not last_file_path:
                 print(f"{ERROR_COLOR}[Sentient]{RESET_COLOR} No file analysis to export.")
@@ -355,7 +336,7 @@ def main():
                 continue
             url = argument
             count_match = re.search(r"\b(\d+)\b", user_input)
-            count = count_match.group(1) if count_match else 1
+            count = int(count_match.group(1)) if count_match else 1
             result = send_traffic(url, count)
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} {result}")
             continue
@@ -366,7 +347,7 @@ def main():
                 continue
             url = argument
             count_match = re.search(r"\b(\d+)\b", user_input)
-            count = count_match.group(1) if count_match else 1
+            count = int(count_match.group(1)) if count_match else 1
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} Simulating {count} real browser visits to {url}. This may take time and impact the target server. Proceed? (y/n)")
             pending_confirmation = (url, count)
             continue
@@ -524,7 +505,6 @@ def main():
                 print(f"  {r}")
             continue
 
-        # Handle confirmation for real traffic (unchanged)
         if pending_confirmation:
             if user_input.lower() == "y":
                 url, count = pending_confirmation
@@ -540,7 +520,6 @@ def main():
                 print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} Please reply with 'y' or 'n'.")
                 continue
 
-        # Handle follow-up questions about the last analyzed file (unchanged)
         if last_file_content and not any(
             user_input.startswith(cmd) for cmd in [
                 "analyze file", "analyze file content", "send traffic",
@@ -559,7 +538,6 @@ def main():
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} {response.text.strip()}")
             continue
 
-        # Handle follow-up questions about the last website scan (AI context-aware)
         if last_scan_results and (
             any(word in user_input.lower() for word in [
                 "scan", "vulnerability", "website", "sql", "xss", "cross site", "paths", "files", "results"
@@ -583,7 +561,6 @@ def main():
             print(f"{SENTIENT_COLOR}[Sentient]{RESET_COLOR} {response.text.strip()}")
             continue
 
-        # Generic AI prompt (unchanged)
         try:
             prompt = f"{system_prompt}\nUser: {user_input}"
             response = model.generate_content(prompt)

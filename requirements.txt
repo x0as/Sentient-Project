@@ -4,5 +4,7 @@ fuzzywuzzy
 requests
 google-search-results
 fastapi
-uvicorn
+uvicorns
 python-whois
+tabulate
+whois
