@@ -362,20 +362,31 @@ def email_tracker_cli(email):
         ("Github", Github),
         # Add more as needed...
     ]
+    results = {}
     for name, func in sites:
         try:
             found = func(email)
             if found is True:
-                print(f"{GREEN}[FOUND]{RESET} {name}")
+                results[name] = "FOUND"
             elif found is False:
-                print(f"{RED}[NOT FOUND]{RESET} {name}")
+                results[name] = "NOT FOUND"
             elif isinstance(found, str) and found.startswith("Error"):
-                print(f"{YELLOW}[ERROR]{RESET} {name}: {found}")
+                results[name] = found
             else:
-                print(f"{YELLOW}[UNKNOWN]{RESET} {name}: {found}")
+                results[name] = f"UNKNOWN: {found}"
         except Exception as e:
-            print(f"{YELLOW}[ERROR]{RESET} {name}: {e}")
+            results[name] = f"ERROR: {e}"
+    return results
 
 if __name__ == "__main__":
     email = input("Enter the email to track: ")
-    email_tracker_cli(email)
+    results = email_tracker_cli(email)
+    for name, status in results.items():
+        if status == "FOUND":
+            print(f"{GREEN}[FOUND]{RESET} {name}")
+        elif status == "NOT FOUND":
+            print(f"{RED}[NOT FOUND]{RESET} {name}")
+        elif status.startswith("Error") or status.startswith("ERROR"):
+            print(f"{YELLOW}[ERROR]{RESET} {name}: {status}")
+        else:
+            print(f"{YELLOW}[UNKNOWN]{RESET} {name}: {status}")

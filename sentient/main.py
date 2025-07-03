@@ -5,27 +5,29 @@ import shutil
 import threading
 import requests
 import google.generativeai as genai
-from traffic_sender import send_traffic
-from real_traffic import imitate_real_traffic
-from file_analysis import analyze_file
 from pymongo import MongoClient
-import Phone_Lookup
-import Email_Lookup
-import Email_Tracker
-import website_scanner
-import whois_lookup
-import subdomain_enum
-import port_scanner
-import dir_bruteforce
-import hash_tools
-import ssl_checker
-import dns_tools
-import email_spoof_test
-import log_analyzer
 import shlex
 from tabulate import tabulate
 from fuzzywuzzy import fuzz
 import re
+
+from .modules.traffic_sender import send_traffic
+from .modules.real_traffic import imitate_real_traffic
+from .modules.file_analysis import analyze_file
+from .modules import Phone_Lookup
+from .modules import Email_Lookup
+from .modules import Email_Tracker
+from .modules import website_scanner
+from .modules import whois_lookup
+from .modules import subdomain_enum
+from .modules import port_scanner
+from .modules import dir_bruteforce
+from .modules import hash_tools
+from .modules import ssl_checker
+from .modules import dns_tools
+from .modules import email_spoof_test
+from .modules import log_analyzer
+
 
 SENTIENT_COLOR = "\033[96m"
 RESET_COLOR = "\033[0m"
@@ -118,8 +120,8 @@ def extract_command(user_input):
         ("email tracker", ["email", "tracker", "track"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
         ("send traffic", ["send", "traffic"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
         ("imitate traffic", ["imitate", "traffic"], r"(https?://[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"),
-        ("analyze file content", ["analyze", "file", "content"], r"[^\s]+"),
-        ("analyze file", ["analyze", "file"], r"[^\s]+"),
+        ("analyze file content", ["analyze", "file", "content"], r'"([^"]+)"|([^\s]+)'),
+        ("analyze file", ["analyze", "file"], r'"([^"]+)"|([^\s]+)'),
         ("whois", ["whois"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         ("subdomain enum", ["subdomain", "enum", "enumerate"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         ("scan ports", ["scan", "ports", "port"], r"[a-zA-Z0-9.-]+"),
@@ -129,7 +131,7 @@ def extract_command(user_input):
         ("check ssl", ["ssl", "tls", "check"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         ("dns lookup", ["dns", "lookup"], r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         ("test email spoofing", ["spoof", "email", "test"], r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"),
-        ("analyze log", ["analyze", "log"], r"[^\s]+"),
+        ("analyze log", ["analyze", "log"], r'"([^"]+)"|([^\s]+)'),
         ("export last scan", ["export", "scan"], r"[^\s]+"),
         ("export last file analysis", ["export", "file", "analysis"], r"[^\s]+"),
     ]
@@ -137,13 +139,14 @@ def extract_command(user_input):
         if all(word in user_input_lower for word in keywords):
             match = re.search(arg_regex, user_input)
             if match:
-                return intent, match.group(0)
+                # Support quoted or unquoted
+                return intent, match.group(1) or match.group(2) if match.lastindex else match.group(0)
     for intent, keywords, arg_regex in patterns:
         for word in keywords:
             if word in user_input_lower:
                 match = re.search(arg_regex, user_input)
                 if match:
-                    return intent, match.group(0)
+                    return intent, match.group(1) or match.group(2) if match.lastindex else match.group(0)
     return None, None
 
 def main():
