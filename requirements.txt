@@ -1,3 +1,5 @@
+selenium
+phonenumbers
 google-generativeai
 pymongo
 fuzzywuzzy
