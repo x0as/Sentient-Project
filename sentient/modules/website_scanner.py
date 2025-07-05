@@ -74,13 +74,16 @@ def scan_sql_injection(url, report):
 
 def scan_xss(url, report):
     payloads = [
-        "<script>alert('found my x0as Github (Huzaifa)')</script>",
-        "<img src=x onerror=alert('found my x0as Github (Huzaifa)')>",
-        "<svg/onload=alert('found my x0as Github (Huzaifa)')>"
+        "<script>alert('Found using Sentient(a summer of hacking Project by x0as (Huzaifa)')</script>",
+        "<img src=x onerror=alert('Found using Sentient(a summer of hacking Project by x0as (Huzaifa)')>",
+        "<svg/onload=alert('Found using Sentient(a summer of hacking Project by x0as (Huzaifa)')>"
     ]
     indicators = [
-        "<script>", "alert('found my x0as Github (Huzaifa)')", "onerror=",
-        "<svg", "javascript:"
+        "<script>",
+        "alert('Found using Sentient(a summer of hacking Project by x0as (Huzaifa)')",
+        "onerror=",
+        "<svg",
+        "javascript:"
     ]
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
