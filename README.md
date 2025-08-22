@@ -81,8 +81,8 @@ If you do not have a MongoDB URI or are unsure how to set one up, you can reques
 
 Interact with Sentient through the command line. Type your cybersecurity or automation queries and receive intelligent responses. Type `exit` or `quit` to end the session.
 
-**Access Key:** Google API Token.  
-For full experience, email muhammadhuzaifakhalidaziz@gmail.com for a Premium Api key/Token.
+**Access Key:** Google Gemini API Token.  
+if needed email muhammadhuzaifakhalidaziz@gmail.com for a Premium Api key/Token.
 
 ---
 
